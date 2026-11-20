@@ -13,6 +13,7 @@ export type Env = {
   SHOPIFY_CLIENT_ID?: string;
   SHOPIFY_CLIENT_SECRET?: string;
   APP_PROXY_SECRET?: string;
+  PUBLIC_HOME_URL?: string;
   PUBLIC_LA_ROCHE_POSAY_URL?: string;
   PUBLIC_KERASTASE_URL?: string;
 };
