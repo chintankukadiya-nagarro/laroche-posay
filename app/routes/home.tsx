@@ -1,52 +1,38 @@
 import { gql } from "@shopify/hydrogen";
-import { Link, useRouteLoaderData } from "react-router";
+import { Link } from "react-router";
 
 import {
-  CollectionCard,
   COLLECTION_CARD_FRAGMENT,
+  CollectionCard,
   type CollectionCardData,
 } from "~/components/CollectionCard";
 import { HomeHero } from "~/components/HomeHero";
-import { ProductCard, PRODUCT_CARD_FRAGMENT, type ProductCardData } from "~/components/ProductCard";
+import { PRODUCT_CARD_FRAGMENT, ProductCard, type ProductCardData } from "~/components/ProductCard";
+import { brandConfig, emptyCatalogMessage, presentBrandCatalog } from "~/lib/brand";
 import { selectHomeHero } from "~/lib/home-hero";
 import { storefrontClientContext } from "~/lib/storefront";
-import {
-  FALLBACK_SHOP_NAME,
-  formatPageTitle,
-  getShopNameFromRootMatch,
-} from "~/lib/storefront-shop";
-import type { loader as rootLoader } from "~/root";
+import { formatPageTitle } from "~/lib/storefront-shop";
 
 import type { Route } from "./+types/home";
 
-const HOME_QUERY = gql(
+export const HOME_QUERY = gql(
   `
-    query Home {
-      products(first: 8, sortKey: CREATED_AT, reverse: true) {
-        nodes {
-          ...ProductCard
+    query Home($handle: String!, $vendor: String!) {
+      brandCollection: collection(handle: $handle) {
+        ...CollectionCard
+        title
+        handle
+        description
+        image {
+          url
+          altText
         }
-      }
-      collections(first: 3) {
-        nodes {
-          ...CollectionCard
-        }
-      }
-      heroCollections: collections(first: 1, sortKey: UPDATED_AT, reverse: true) {
-        nodes {
-          title
-          handle
-          description
-          image {
-            url
-            altText
-          }
-          products(first: 1) {
-            nodes {
-              featuredImage {
-                url
-                altText
-              }
+        brandProducts: products(first: 8, filters: [{ productVendor: $vendor }]) {
+          nodes {
+            ...ProductCard
+            featuredImage {
+              url
+              altText
             }
           }
         }
@@ -56,33 +42,36 @@ const HOME_QUERY = gql(
   [PRODUCT_CARD_FRAGMENT, COLLECTION_CARD_FRAGMENT],
 );
 
-export function meta({ matches }: Route.MetaArgs) {
-  const shopName = getShopNameFromRootMatch(matches[0]);
+export function meta() {
   return [
-    { title: formatPageTitle("Home", shopName) },
+    { title: formatPageTitle("Home", brandConfig.name) },
     {
       name: "description",
-      content: `Shop new arrivals and featured categories at ${shopName}.`,
+      content: `Shop ${brandConfig.name} products. This demonstration storefront is not an official ${brandConfig.name} website.`,
     },
   ];
 }
 
 export async function loader({ context }: Route.LoaderArgs) {
   const storefrontClient = context.get(storefrontClientContext);
-  const { data } = await storefrontClient.graphql(HOME_QUERY);
+  const { data } = await storefrontClient.graphql(HOME_QUERY, {
+    variables: { handle: brandConfig.collectionHandle, vendor: brandConfig.vendor },
+  });
 
-  // New arrivals: the most recently created products (by creation date, not
-  // publication date), newest first, in the order the Storefront API returns.
-  const featuredProducts: ProductCardData[] = data?.products.nodes ?? [];
-  const featuredCollections: CollectionCardData[] = data?.collections.nodes ?? [];
-  // The hero features the most recently updated collection, independent of the
-  // category list above.
-  const heroCollections = data?.heroCollections.nodes ?? [];
+  const collection = data?.brandCollection ?? null;
+  const scoped = presentBrandCatalog(
+    collection?.brandProducts.nodes ?? [],
+    { hasNextPage: false, endCursor: null },
+    collection?.brandProducts.nodes.length ?? 0,
+  );
+
+  const featuredProducts: ProductCardData[] = scoped.products;
+  const featuredCollections: CollectionCardData[] = collection ? [collection] : [];
 
   return {
     featuredProducts,
     featuredCollections,
-    heroCollections,
+    heroCollections: collection ? [collection] : [],
   };
 }
 
@@ -94,7 +83,7 @@ function NewArrivals({ products }: { products: readonly ProductCardData[] }) {
           New arrivals
         </h2>
         <Link
-          to="/collections"
+          to={`/collections/${brandConfig.collectionHandle}`}
           className="min-h-touch-target text-on-surface focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-sm font-normal no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-opacity"
         >
           <span>Collections</span>
@@ -131,7 +120,14 @@ function NewArrivals({ products }: { products: readonly ProductCardData[] }) {
             ))}
           </ul>
         </div>
-      ) : null}
+      ) : (
+        <div className="max-w-page px-margin mx-auto">
+          <div className="border-border bg-surface-secondary rounded-card border p-8 text-center">
+            <h3 className="type-heading-md text-on-surface">Nothing to show yet</h3>
+            <p className="text-on-surface-secondary mt-2 text-sm">{emptyCatalogMessage()}</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -150,17 +146,17 @@ function ShopByCategory({ collections }: { collections: readonly CollectionCardD
             </li>
           ))}
         </ul>
-      ) : null}
+      ) : (
+        <div className="max-w-page px-margin mx-auto">
+          <p className="text-on-surface-secondary text-sm">{emptyCatalogMessage()}</p>
+        </div>
+      )}
     </section>
   );
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const rootData = useRouteLoaderData<typeof rootLoader>("root");
-  const hero = selectHomeHero(
-    loaderData.heroCollections,
-    rootData?.shopInfo.name ?? FALLBACK_SHOP_NAME,
-  );
+  const hero = selectHomeHero(loaderData.heroCollections, brandConfig.name);
 
   return (
     <main className="flex-1" id="main-content" tabIndex={-1}>

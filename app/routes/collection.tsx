@@ -13,19 +13,20 @@ import {
   useLoadMore,
 } from "~/components/CollectionBrowse";
 import { ProductCard } from "~/components/ProductCard";
+import { brandConfig, emptyCatalogMessage } from "~/lib/brand";
 import { loadCollectionPage } from "~/lib/collection";
 import { storefrontClientContext } from "~/lib/storefront";
-import { formatPageTitle, getShopNameFromRootMatch } from "~/lib/storefront-shop";
+import { formatPageTitle } from "~/lib/storefront-shop";
 
 import type { Route } from "./+types/collection";
 
-export function meta({ matches }: Route.MetaArgs) {
-  const shopName = getShopNameFromRootMatch(matches[0]);
+export function meta({ data }: Route.MetaArgs) {
+  const title = data?.collection.title ?? "Collection";
   return [
-    { title: formatPageTitle("Collection", shopName) },
+    { title: formatPageTitle(title, brandConfig.name) },
     {
       name: "description",
-      content: `Shop the ${shopName} collection page.`,
+      content: `Shop ${title} from ${brandConfig.name}.`,
     },
   ];
 }
@@ -153,20 +154,29 @@ function ProductGrid({ products }: { products: readonly ProductNode[] }) {
   );
 }
 
-function EmptyState({ collectionPath }: { collectionPath: string }) {
+function EmptyState({
+  collectionPath,
+  filtersApplied,
+}: {
+  collectionPath: string;
+  filtersApplied: boolean;
+}) {
   return (
     <div className="border-border bg-surface-secondary rounded-card border p-8 text-center">
       <h2 className="type-heading-md text-on-surface">No products found</h2>
       <p className="text-on-surface-secondary mt-2 text-sm">
-        Try removing filters to see more products in this collection.
+        {emptyCatalogMessage()}
+        {filtersApplied ? " Remove filters if you have any applied." : ""}
       </p>
-      <Link
-        to={collectionPath}
-        preventScrollReset
-        className="rounded-button button-primary focus-visible:outline-accent mt-6 inline-flex h-11 items-center justify-center px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[color,background-color,border-color,transform] motion-safe:active:scale-[0.97]"
-      >
-        Clear all filters
-      </Link>
+      {filtersApplied ? (
+        <Link
+          to={collectionPath}
+          preventScrollReset
+          className="rounded-button button-primary focus-visible:outline-accent mt-6 inline-flex h-11 items-center justify-center px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[color,background-color,border-color,transform] motion-safe:active:scale-[0.97]"
+        >
+          Clear all filters
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -207,7 +217,10 @@ function CollectionResults({ loaderData }: { loaderData: Route.ComponentProps["l
         {nodes.length > 0 ? (
           <ProductGrid products={nodes} />
         ) : (
-          <EmptyState collectionPath={collectionPath} />
+          <EmptyState
+            collectionPath={collectionPath}
+            filtersApplied={location.search.includes("filter.")}
+          />
         )}
       </div>
       <LoadMore

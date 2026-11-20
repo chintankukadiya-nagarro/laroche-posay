@@ -3,6 +3,7 @@ import type { StorefrontClient } from "@shopify/hydrogen";
 import type { ProductFilter as StorefrontApiProductFilter } from "@shopify/hydrogen/storefront-api-types";
 
 import { PRODUCT_CARD_FRAGMENT } from "~/components/ProductCard";
+import { hideVendorFacet, literalSearchTerm, presentBrandCatalog, withBrandVendorFilter } from "~/lib/brand";
 
 export const SEARCH_PAGE_SIZE = 9;
 
@@ -28,6 +29,7 @@ export const SEARCH_QUERY = gql(
         after: $after
         sortKey: $sortKey
         reverse: $reverse
+        prefix: LAST
         productFilters: $productFilters
       ) {
         totalCount
@@ -111,31 +113,32 @@ export async function loadSearchPage({
 }): Promise<SearchPageData> {
   const url = new URL(request.url);
   const searchTerm = (url.searchParams.get("q") ?? "").trim();
+  const empty: SearchPageData = {
+    performed: false,
+    searchTerm,
+    products: [],
+    availableFilters: [],
+    pageInfo: { hasNextPage: false, endCursor: null },
+    currencyCode: null,
+    totalCount: 0,
+    dataSearch: url.searchParams.toString(),
+    origin: url.origin,
+  };
 
-  if (!searchTerm) {
-    return {
-      performed: false,
-      searchTerm,
-      products: [],
-      availableFilters: [],
-      pageInfo: { hasNextPage: false, endCursor: null },
-      currencyCode: null,
-      totalCount: 0,
-      dataSearch: url.searchParams.toString(),
-      origin: url.origin,
-    };
-  }
+  // Operators are stripped before the query. A term that is only search syntax
+  // never reaches the API, and the vendor filter below is not taken from it.
+  const term = literalSearchTerm(searchTerm);
+  if (!searchTerm || !term) return empty;
 
   const browse = parseCollectionParams(url.searchParams);
   const after = url.searchParams.get("after") || undefined;
   const sortKey = browse.sortKey === "PRICE" ? "PRICE" : "RELEVANCE";
 
   const variables: SearchQueryVariables = {
-    term: searchTerm,
+    term,
     first: SEARCH_PAGE_SIZE,
     after,
-    productFilters:
-      browse.filters.length > 0 ? (browse.filters as StorefrontApiProductFilter[]) : undefined,
+    productFilters: withBrandVendorFilter(browse.filters as StorefrontApiProductFilter[]),
     sortKey,
     reverse: sortKey === "PRICE" ? browse.reverse || undefined : undefined,
   };
@@ -147,15 +150,16 @@ export async function loadSearchPage({
   const products = data.search.nodes.filter(
     (node): node is SearchProductNode => node.__typename === "Product",
   );
+  const scoped = presentBrandCatalog(products, data.search.pageInfo, data.search.totalCount);
 
   return {
     performed: true,
     searchTerm,
-    products,
-    availableFilters: data.search.productFilters,
-    pageInfo: data.search.pageInfo,
+    products: scoped.products,
+    availableFilters: hideVendorFacet(data.search.productFilters),
+    pageInfo: scoped.pageInfo,
     currencyCode: data.shop.paymentSettings.currencyCode,
-    totalCount: data.search.totalCount,
+    totalCount: scoped.totalCount,
     dataSearch: url.searchParams.toString(),
     origin: url.origin,
   };

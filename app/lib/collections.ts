@@ -2,20 +2,13 @@ import { gql, type StorefrontApi } from "@shopify/hydrogen";
 import type { StorefrontClient } from "@shopify/hydrogen";
 
 import { COLLECTION_CARD_FRAGMENT } from "~/components/CollectionCard";
-
-export const COLLECTIONS_PAGE_SIZE = 12;
+import { brandConfig } from "~/lib/brand";
 
 export const COLLECTIONS_QUERY = gql(
   `
-    query CollectionsList($first: Int!, $after: String) {
-      collections(first: $first, after: $after) {
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        nodes {
-          ...CollectionCard
-        }
+    query BrandCollection($handle: String!, $vendor: String!) {
+      collection(handle: $handle) {
+        ...CollectionCard
       }
     }
   `,
@@ -33,15 +26,15 @@ export async function loadCollectionsPage({
 }) {
   const url = new URL(request.url);
   const variables: CollectionsQueryVariables = {
-    first: COLLECTIONS_PAGE_SIZE,
-    after: url.searchParams.get("after") || null,
+    handle: brandConfig.collectionHandle,
+    vendor: brandConfig.vendor,
   };
-
   const { data } = await storefrontClient.graphql(COLLECTIONS_QUERY, { variables });
+  const collection = data?.collection ?? null;
 
   return {
-    collections: data?.collections ?? {
-      nodes: [],
+    collections: {
+      nodes: collection ? [collection] : [],
       pageInfo: { hasNextPage: false, endCursor: null },
     },
     origin: url.origin,

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 
+import { brandConfig } from "~/lib/brand";
 import { closeMobileNavDrawer, MOBILE_NAV_DRAWER_ID, openDialogFallback } from "~/lib/cart-drawer";
 
 export function MobileNav() {
@@ -36,11 +37,11 @@ export function MobileNav() {
             <ul role="list" className="flex flex-col">
               <li>
                 <Link
-                  to="/collections"
+                  to={`/collections/${brandConfig.collectionHandle}`}
                   className="min-h-touch-target text-on-surface flex items-center rounded-sm text-xl font-normal no-underline hover:opacity-70 motion-safe:transition-opacity"
                   onClick={() => closeMobileNavDrawer()}
                 >
-                  Collections
+                  Shop
                 </Link>
               </li>
             </ul>

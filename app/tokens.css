@@ -10,8 +10,8 @@
 @theme {
   /* Surfaces */
   --color-surface: #ffffff;
-  --color-surface-secondary: #e3e3e3;
-  --color-on-surface: #000000;
+  --color-surface-secondary: #e8f1fa;
+  --color-on-surface: #0b1f33;
   --color-on-surface-secondary: #6b7280;
   --color-border: #e5e7eb;
 
@@ -21,9 +21,9 @@
      filter swatches and variant option pills — is DERIVED from it with modern
      CSS: color-mix() in perceptual oklab space for the hover/active state
      shades, and relative-color oklch() for the softer accent tint. Nothing
-     hard-codes the burgundy a second time, so the whole UI re-harmonizes from
+     hard-codes the brand color a second time, so the whole UI re-harmonizes from
      this one knob. */
-  --color-primary: #5d0707;
+  --color-primary: #0057b8;
 
   /* Interactive — derived from --color-primary.
      -hover and -active are the brand darkened one and two steps in oklab; this
@@ -847,6 +847,16 @@
 @utility bleed-full {
   margin-inline: calc(-1 * var(--spacing-margin) - max(0px, (100vw - var(--spacing-page)) / 2));
   width: calc(100% + 2 * var(--spacing-margin) + max(0px, 100vw - var(--spacing-page)));
+}
+
+/* Kérastase repository: set data-brand="kerastase" from its brand config. */
+[data-brand="kerastase"] {
+  --color-primary: #6b5130;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f6f1e8;
+  --color-on-surface: #141414;
+  --color-on-surface-secondary: #5c5346;
+  --color-border: #e6dccb;
 }
 
 @utility gallery-bleed-start {

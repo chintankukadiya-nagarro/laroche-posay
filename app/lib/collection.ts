@@ -3,6 +3,12 @@ import type { StorefrontClient } from "@shopify/hydrogen";
 import type { ProductFilter as StorefrontApiProductFilter } from "@shopify/hydrogen/storefront-api-types";
 
 import { PRODUCT_CARD_FRAGMENT } from "~/components/ProductCard";
+import {
+  hideVendorFacet,
+  isAllowedCollectionHandle,
+  presentBrandCatalog,
+  withBrandVendorFilter,
+} from "~/lib/brand";
 
 export const COLLECTION_PAGE_SIZE = 9;
 
@@ -85,6 +91,10 @@ export async function loadCollectionPage({
   handle: string;
   request: Request;
 }) {
+  if (!isAllowedCollectionHandle(handle)) {
+    throw new Response("Not Found", { status: 404 });
+  }
+
   const url = new URL(request.url);
   const browse = parseCollectionParams(url.searchParams);
   const after = url.searchParams.get("after") || undefined;
@@ -93,8 +103,7 @@ export async function loadCollectionPage({
     handle,
     first: COLLECTION_PAGE_SIZE,
     after,
-    filters:
-      browse.filters.length > 0 ? (browse.filters as StorefrontApiProductFilter[]) : undefined,
+    filters: withBrandVendorFilter(browse.filters as StorefrontApiProductFilter[]),
     sortKey: browse.sortKey,
     reverse: browse.reverse || undefined,
   };
@@ -103,11 +112,17 @@ export async function loadCollectionPage({
 
   if (!data?.collection) throw new Response("Collection not found", { status: 404 });
 
+  const scoped = presentBrandCatalog(
+    data.collection.products.nodes,
+    data.collection.products.pageInfo,
+    data.collection.products.nodes.length,
+  );
+
   return {
     collection: data.collection,
-    products: data.collection.products.nodes,
-    availableFilters: data.collection.products.filters,
-    pageInfo: data.collection.products.pageInfo,
+    products: scoped.products,
+    availableFilters: hideVendorFacet(data.collection.products.filters),
+    pageInfo: scoped.pageInfo,
     currencyCode: data.shop.paymentSettings.currencyCode,
     dataSearch: url.searchParams.toString(),
     origin: url.origin,

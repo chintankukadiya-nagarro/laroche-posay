@@ -2,6 +2,7 @@ import { ShopPayButton } from "@shopify/hydrogen/react";
 import { useEffect, useMemo, useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
 
+import { cartHasConfirmedForeignVendor, shopifyCheckoutUrl } from "~/lib/brand";
 import { useCart, useCartForm } from "~/lib/cart";
 import { closeCartDrawer, configureOpenCartAction, CART_DRAWER_ID } from "~/lib/cart-drawer";
 import { formatPrice } from "~/lib/money";
@@ -237,6 +238,10 @@ function CartFooter() {
   const revalidating = useCart((state) => "revalidating" in state && state.revalidating === true);
   const hasLines = cart.lines.nodes.length > 0;
   const isPending = hasPendingCost(pending) || revalidating;
+  const checkoutUrl = shopifyCheckoutUrl(
+    cart.checkoutUrl,
+    cartHasConfirmedForeignVendor(cart.lines.nodes),
+  );
 
   if (!hasLines) return null;
 
@@ -257,11 +262,11 @@ function CartFooter() {
         <p className="text-on-surface-secondary text-xs">
           Taxes and shipping calculated at checkout
         </p>
-        {cart.checkoutUrl ? (
+        {checkoutUrl ? (
           <>
             <ShopPayButton width="100%" borderRadius="8px" />
             <a
-              href={cart.checkoutUrl}
+              href={checkoutUrl}
               className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[color,background-color,border-color,transform] motion-safe:active:scale-[0.97]"
             >
               Checkout

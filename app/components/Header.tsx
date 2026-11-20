@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { Link } from "react-router";
 
+import { brandConfig } from "~/lib/brand";
 import { useCart } from "~/lib/cart";
 import { CART_DRAWER_ID, SEARCH_DRAWER_ID, openDialogFromLinkClick } from "~/lib/cart-drawer";
-import type { StorefrontShop } from "~/lib/storefront-shop";
 
 import { MobileNav, MobileNavTrigger } from "./MobileNav";
 
@@ -19,10 +18,8 @@ function displayCount(count: number) {
   return count > 99 ? "99+" : String(count);
 }
 
-export function Header({ shopInfo }: { shopInfo: StorefrontShop }) {
+export function Header() {
   const totalQuantity = useCart((state) => state.data.totalQuantity);
-  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
-  const logo = shopInfo.logo;
 
   return (
     <header className="border-border bg-surface sticky top-0 z-40 border-b">
@@ -36,26 +33,11 @@ export function Header({ shopInfo }: { shopInfo: StorefrontShop }) {
           </div>
           <Link
             to="/"
-            aria-label={shopInfo.name}
-            title={shopInfo.name}
+            aria-label={brandConfig.name}
+            title={brandConfig.name}
             className="text-on-surface focus-visible:outline-accent inline-flex max-w-48 min-w-0 items-center rounded-sm text-lg font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            {logo && failedLogoUrl !== logo.url ? (
-              <img
-                src={logo.url}
-                alt={logo.altText ?? shopInfo.name}
-                width={logo.width ?? undefined}
-                height={logo.height ?? undefined}
-                className="h-auto max-h-10 w-auto max-w-full object-contain"
-                // An SSR image can fail before hydration attaches onError, so also check on mount.
-                ref={(img) => {
-                  if (img?.complete && img.naturalWidth === 0) setFailedLogoUrl(logo.url);
-                }}
-                onError={() => setFailedLogoUrl(logo.url)}
-              />
-            ) : (
-              <span className="line-clamp-2 leading-tight wrap-anywhere">{shopInfo.name}</span>
-            )}
+            <span className="line-clamp-2 leading-tight wrap-anywhere">{brandConfig.name}</span>
           </Link>
         </div>
 
@@ -65,10 +47,10 @@ export function Header({ shopInfo }: { shopInfo: StorefrontShop }) {
           data-desktop-nav
         >
           <Link
-            to="/collections"
+            to={`/collections/${brandConfig.collectionHandle}`}
             className="text-on-surface focus-visible:outline-accent shrink-0 rounded-sm text-sm font-normal whitespace-nowrap no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-opacity"
           >
-            Collections
+            Shop
           </Link>
         </nav>
 

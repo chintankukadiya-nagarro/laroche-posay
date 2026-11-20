@@ -13,7 +13,7 @@ export const COLLECTION_CARD_FRAGMENT = gql(`
       width
       height
     }
-    products(first: 1) {
+    products(first: 1, filters: [{ productVendor: $vendor }]) {
       nodes {
         featuredImage {
           url
@@ -21,7 +21,7 @@ export const COLLECTION_CARD_FRAGMENT = gql(`
         }
       }
     }
-    productCountProbe: products(first: 100) {
+    productCountProbe: products(first: 100, filters: [{ productVendor: $vendor }]) {
       nodes {
         id
       }
@@ -33,7 +33,7 @@ export const COLLECTION_CARD_FRAGMENT = gql(`
 `);
 
 const COLLECTION_CARD_SHAPE_QUERY = gql(
-  `query CollectionCardShape { collections(first: 1) { nodes { ...CollectionCard } } }`,
+  `query CollectionCardShape($vendor: String!) { collections(first: 1) { nodes { ...CollectionCard } } }`,
   [COLLECTION_CARD_FRAGMENT],
 );
 

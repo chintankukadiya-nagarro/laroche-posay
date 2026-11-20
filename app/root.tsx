@@ -18,8 +18,10 @@ import { CartDrawer } from "~/components/CartDrawer";
 import { Footer } from "~/components/Footer";
 import { Header } from "~/components/Header";
 import { SearchDrawer } from "~/components/SearchDrawer";
+import { brandConfig } from "~/lib/brand";
+import { clearBrandNoticeOnDocument, enforceBrandHandoff } from "~/lib/brand-routes";
 import { CartProvider } from "~/lib/cart";
-import { cartHandlers } from "~/lib/cart-handlers";
+import { brandCartHandlers, loadBrandCart } from "~/lib/cart-handlers";
 import { createRequestCustomerAccount, customerAccountContext } from "~/lib/customer-account";
 import { envContext } from "~/lib/env";
 import { predictiveSearchHandlers } from "~/lib/predictive-search-handlers";
@@ -56,6 +58,9 @@ export const middleware: Route.MiddlewareFunction[] = [
     const sessionManager =
       customerAccount?.customerAccount.sessionManager ?? createEphemeralSessionManager(request);
 
+    const brandHandoff = await enforceBrandHandoff(request, storefrontClient);
+    if (brandHandoff) return brandHandoff;
+
     const shopifyRoute = handleShopifyRoutes({
       request,
       requestContext,
@@ -63,8 +68,8 @@ export const middleware: Route.MiddlewareFunction[] = [
       storefrontClient,
       routeTemplates,
       handlers: customerAccount
-        ? [cartHandlers, predictiveSearchHandlers, customerAccount.handlers]
-        : [cartHandlers, predictiveSearchHandlers],
+        ? [brandCartHandlers, predictiveSearchHandlers, customerAccount.handlers]
+        : [brandCartHandlers, predictiveSearchHandlers],
     });
 
     if (shopifyRoute) return shopifyRoute;
@@ -87,20 +92,21 @@ export const middleware: Route.MiddlewareFunction[] = [
     }
 
     requestContext.applyResponseHeaders(response.headers);
-    return response;
+    return clearBrandNoticeOnDocument(request, response);
   },
 ];
 
 export async function loader({ context, request }: Route.LoaderArgs) {
   const env = context.get(envContext);
   const storefrontClient = context.get(storefrontClientContext);
-  const [cartResult, layout] = await Promise.all([
-    cartHandlers.get({ storefrontClient, request }),
+  const [cartLoaded, layout] = await Promise.all([
+    loadBrandCart({ storefrontClient, request }),
     loadRootLayout(storefrontClient),
   ]);
 
   return {
-    cartData: cartResult.data,
+    cartData: cartLoaded.result.data,
+    brandNotices: cartLoaded.notices,
     shopInfo: layout.shopInfo,
     shopIdentity: resolveShopIdentity(env, layout.shopId),
     currency: layout.currency,
@@ -113,7 +119,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const rootData = useRouteLoaderData<typeof loader>("root");
 
   return (
-    <html lang="en">
+    <html lang="en" data-brand={brandConfig.themeId}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -152,7 +158,19 @@ export default function App({ loaderData }: Route.ComponentProps) {
       <PageViewedTracker />
       <CartAnalyticsTracker />
       <AnnouncementBar />
-      <Header shopInfo={loaderData.shopInfo} />
+      <Header />
+      {loaderData.brandNotices.length > 0 ? (
+        <div
+          role="status"
+          className="border-border bg-surface-secondary px-margin border-b py-3 text-sm"
+        >
+          <ul role="list" className="max-w-page mx-auto grid gap-1">
+            {loaderData.brandNotices.map((notice) => (
+              <li key={notice}>{notice}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <Outlet />
       <Footer shopInfo={loaderData.shopInfo} />
       <CartDrawer />

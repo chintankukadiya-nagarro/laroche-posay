@@ -1,6 +1,7 @@
 import { gql } from "@shopify/hydrogen/customer-account";
 import { Link, useNavigation } from "react-router";
 
+import { brandConfig } from "~/lib/brand";
 import { customerAccountContext } from "~/lib/customer-account";
 import { formatPrice } from "~/lib/money";
 
@@ -52,7 +53,7 @@ const buttonClass =
   "rounded-button focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[color,background-color,border-color,transform] motion-safe:active:scale-[0.97]";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Account · CORE" }];
+  return [{ title: `Account · ${brandConfig.name}` }];
 }
 
 export async function loader({ context, request }: Route.LoaderArgs) {
@@ -189,7 +190,10 @@ function Orders({ orders }: { orders: Customer["orders"] }) {
       {orders.nodes.length === 0 ? (
         <div>
           <p className="text-on-surface font-medium">You haven&apos;t placed any orders yet.</p>
-          <Link to="/collections" className={`button-primary mt-6 ${buttonClass}`}>
+          <Link
+            to={`/collections/${brandConfig.collectionHandle}`}
+            className={`button-primary mt-6 ${buttonClass}`}
+          >
             Start shopping
           </Link>
         </div>

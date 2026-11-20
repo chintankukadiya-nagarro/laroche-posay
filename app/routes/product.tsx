@@ -11,11 +11,12 @@ import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { ProductCard, PRODUCT_CARD_FRAGMENT } from "~/components/ProductCard";
+import { brandConfig, isAllowedVendor, presentBrandCatalog } from "~/lib/brand";
 import { openCartDrawer } from "~/lib/cart-drawer";
 import { formatPrice, salePercent } from "~/lib/money";
 import { ProductProvider, useProductForm } from "~/lib/product";
 import { storefrontClientContext } from "~/lib/storefront";
-import { formatPageTitle, getShopNameFromRootMatch } from "~/lib/storefront-shop";
+import { formatPageTitle } from "~/lib/storefront-shop";
 
 import type { Route } from "./+types/product";
 
@@ -52,9 +53,14 @@ const PRODUCT_VARIANT_FRAGMENT = gql(`
   }
 `);
 
-const PRODUCT_QUERY = gql(
+export const PRODUCT_QUERY = gql(
   `
-    query ProductPage($handle: String!, $selectedOptions: [SelectedOptionInput!]!) {
+    query ProductPage(
+      $handle: String!
+      $selectedOptions: [SelectedOptionInput!]!
+      $collectionHandle: String!
+      $vendor: String!
+    ) {
       product(handle: $handle) {
         id
         handle
@@ -123,9 +129,11 @@ const PRODUCT_QUERY = gql(
           ...ProductVariantFields
         }
       }
-      products(first: 5) {
-        nodes {
-          ...ProductCard
+      brandCollection: collection(handle: $collectionHandle) {
+        products(first: 8, filters: [{ productVendor: $vendor }]) {
+          nodes {
+            ...ProductCard
+          }
         }
       }
     }
@@ -133,13 +141,15 @@ const PRODUCT_QUERY = gql(
   [PRODUCT_VARIANT_FRAGMENT, PRODUCT_CARD_FRAGMENT],
 );
 
-export function meta({ matches }: Route.MetaArgs) {
-  const shopName = getShopNameFromRootMatch(matches[0]);
+export function meta({ data }: Route.MetaArgs) {
+  const title = data?.product.title ?? "Product";
   return [
-    { title: formatPageTitle("Product", shopName) },
+    { title: formatPageTitle(title, brandConfig.name) },
     {
       name: "description",
-      content: `Shop the ${shopName} product detail page.`,
+      content: data?.product.title
+        ? `${data.product.title} from ${brandConfig.name}.`
+        : `Shop ${brandConfig.name} products.`,
     },
   ];
 }
@@ -153,14 +163,27 @@ export async function loader({ context, params, request }: Route.LoaderArgs) {
     searchParams: new URL(request.url).searchParams,
   });
   const { data } = await storefrontClient.graphql(PRODUCT_QUERY, {
-    variables: { handle, selectedOptions },
+    variables: {
+      handle,
+      selectedOptions,
+      collectionHandle: brandConfig.collectionHandle,
+      vendor: brandConfig.vendor,
+    },
   });
 
-  if (!data?.product) throw new Response("Not Found", { status: 404 });
+  if (!data?.product || !isAllowedVendor(data.product.vendor)) {
+    throw new Response("Not Found", { status: 404 });
+  }
+
+  const related = presentBrandCatalog(
+    data.brandCollection?.products.nodes ?? [],
+    { hasNextPage: false, endCursor: null },
+    data.brandCollection?.products.nodes.length ?? 0,
+  );
 
   return {
     product: data.product,
-    relatedProducts: data.products.nodes
+    relatedProducts: related.products
       .filter((product) => product.handle !== data.product?.handle)
       .slice(0, 4),
   };
@@ -763,7 +786,7 @@ function RelatedProducts({ products }: { products: RelatedProduct[] }) {
           id="related-products-heading"
           className="type-heading-xl max-w-page px-margin mx-auto mb-8"
         >
-          More products
+          More from {brandConfig.name}
         </h2>
         <div className="max-w-page px-margin mx-auto contain-paint">
           <ul

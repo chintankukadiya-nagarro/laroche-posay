@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 
+import { brandConfig } from "~/lib/brand";
 import type { StorefrontShop } from "~/lib/storefront-shop";
 
 import { PaymentMethodIcon } from "./PaymentMethodIcon";
@@ -14,7 +15,11 @@ export function Footer({ shopInfo }: { shopInfo: StorefrontShop }) {
         className={`border-border grid grid-cols-1 gap-8 border-t py-12 text-sm md:grid-cols-2 ${shopInfo.paymentMethods.length > 0 ? "lg:grid-cols-3" : ""}`}
       >
         <div className="min-w-0 wrap-anywhere">
-          <h2 className="type-body-sm text-on-surface mb-4 font-medium">{shopInfo.name}</h2>
+          <h2 className="type-body-sm text-on-surface mb-4 font-medium">{brandConfig.name}</h2>
+          <p className="text-on-surface-secondary text-sm">
+            A demonstration storefront for {brandConfig.name}. Not an official {brandConfig.name}{" "}
+            website.
+          </p>
         </div>
         <nav aria-labelledby="footer-customer-care-heading">
           <h2

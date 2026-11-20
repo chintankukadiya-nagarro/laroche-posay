@@ -1,19 +1,19 @@
 import { Link } from "react-router";
 
 import { CollectionCard } from "~/components/CollectionCard";
+import { brandConfig, emptyCatalogMessage } from "~/lib/brand";
 import { loadCollectionsPage } from "~/lib/collections";
 import { storefrontClientContext } from "~/lib/storefront";
-import { formatPageTitle, getShopNameFromRootMatch } from "~/lib/storefront-shop";
+import { formatPageTitle } from "~/lib/storefront-shop";
 
 import type { Route } from "./+types/collections";
 
-export function meta({ matches }: Route.MetaArgs) {
-  const shopName = getShopNameFromRootMatch(matches[0]);
+export function meta() {
   return [
-    { title: formatPageTitle("Collections", shopName) },
+    { title: formatPageTitle(brandConfig.name, brandConfig.name) },
     {
       name: "description",
-      content: `Browse all ${shopName} collections.`,
+      content: `Browse the ${brandConfig.name} collection.`,
     },
   ];
 }
@@ -77,8 +77,8 @@ function CollectionsGrid({ collections }: { collections: readonly CollectionNode
   if (collections.length === 0) {
     return (
       <div className="border-border bg-surface-secondary rounded-card border p-8 text-center">
-        <h2 className="type-heading-md text-on-surface">No collections found</h2>
-        <p className="text-on-surface-secondary mt-2 text-sm">No collections available.</p>
+        <h2 className="type-heading-md text-on-surface">No collection published</h2>
+        <p className="text-on-surface-secondary mt-2 text-sm">{emptyCatalogMessage()}</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function CollectionsRoute({ loaderData }: Route.ComponentProps) {
         <BreadcrumbJsonLd origin={loaderData.origin} />
         <Breadcrumb />
         <div className="mb-8">
-          <h1 className="type-display text-on-surface">Collections</h1>
+          <h1 className="type-display text-on-surface">{brandConfig.name}</h1>
         </div>
         <CollectionsGrid collections={loaderData.collections.nodes} />
       </div>

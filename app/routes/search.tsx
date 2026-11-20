@@ -17,19 +17,19 @@ import {
   useLoadMore,
 } from "~/components/CollectionBrowse";
 import { ProductCard } from "~/components/ProductCard";
+import { brandConfig } from "~/lib/brand";
 import { loadSearchPage, type SearchPageData } from "~/lib/search";
 import { storefrontClientContext } from "~/lib/storefront";
-import { formatPageTitle, getShopNameFromRootMatch } from "~/lib/storefront-shop";
+import { formatPageTitle } from "~/lib/storefront-shop";
 
 import type { Route } from "./+types/search";
 
-export function meta({ matches }: Route.MetaArgs) {
-  const shopName = getShopNameFromRootMatch(matches[0]);
+export function meta() {
   return [
-    { title: formatPageTitle("Search", shopName) },
+    { title: formatPageTitle("Search", brandConfig.name) },
     {
       name: "description",
-      content: `Search products at ${shopName}.`,
+      content: `Search ${brandConfig.name} products.`,
     },
   ];
 }
@@ -114,7 +114,10 @@ const registerSearchForm = createPredictiveSearchFormRegister();
 function SearchHeader({ term }: { term: string }) {
   return (
     <div className="mb-8">
-      <h1 className="type-display text-on-surface mb-6">Search</h1>
+      <h1 className="type-display text-on-surface mb-2">Search</h1>
+      <p className="text-on-surface-secondary mb-6 text-sm">
+        Results include {brandConfig.name} products only.
+      </p>
       <form
         action="/search"
         method="get"
@@ -292,7 +295,11 @@ export default function SearchRoute({ loaderData }: Route.ComponentProps) {
           <BreadcrumbJsonLd origin={loaderData.origin} />
           <Breadcrumb />
           <SearchHeader term={loaderData.searchTerm} />
-          {loaderData.performed ? <SearchResults loaderData={loaderData} /> : null}
+          {loaderData.performed ? (
+            <SearchResults loaderData={loaderData} />
+          ) : loaderData.searchTerm ? (
+            <NoResults term={loaderData.searchTerm} />
+          ) : null}
         </div>
       </main>
     </CollectionProvider>
