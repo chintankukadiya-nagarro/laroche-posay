@@ -19,7 +19,7 @@ function displayCount(count: number) {
 }
 
 export function Header() {
-  const totalQuantity = useCart((state) => state.data.totalQuantity);
+  const totalQuantity = useCart((state) => state.data?.totalQuantity ?? 0);
 
   return (
     <header className="border-border bg-surface sticky top-0 z-40 border-b">

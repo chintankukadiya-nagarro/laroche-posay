@@ -1,6 +1,6 @@
 import { gql, type StorefrontApi, type StorefrontClient } from "@shopify/hydrogen";
 
-import { normalizeStorefrontShop, type StorefrontShop } from "~/lib/storefront-shop";
+import { FALLBACK_SHOP_NAME, normalizeStorefrontShop, type StorefrontShop } from "~/lib/storefront-shop";
 
 export const ROOT_LAYOUT_QUERY = gql(`
   query RootLayout($country: CountryCode, $language: LanguageCode)
@@ -46,6 +46,26 @@ type RootLayoutLoaderData = {
 };
 
 export async function loadRootLayout(
+  storefrontClient: Pick<StorefrontClient, "graphql">,
+): Promise<RootLayoutLoaderData> {
+  try {
+    return await readRootLayout(storefrontClient);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : "Root layout query failed.");
+    try {
+      return await readRootLayout(storefrontClient);
+    } catch (retryError) {
+      console.error(retryError instanceof Error ? retryError.message : "Root layout query failed.");
+      return {
+        shopId: "",
+        shopInfo: { name: FALLBACK_SHOP_NAME, logo: null, paymentMethods: [] },
+        currency: "USD",
+      };
+    }
+  }
+}
+
+async function readRootLayout(
   storefrontClient: Pick<StorefrontClient, "graphql">,
 ): Promise<RootLayoutLoaderData> {
   const layoutResult = await storefrontClient.graphql(ROOT_LAYOUT_QUERY);

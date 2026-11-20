@@ -7,7 +7,10 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   resolve: {
-    alias: { "~": path.resolve(root, "app") },
+    alias: {
+      "~": path.resolve(root, "app"),
+      "@loreal/shared-cart": path.resolve(root, "packages/shared-cart/src/index.ts"),
+    },
   },
   test: {
     environment: "node",

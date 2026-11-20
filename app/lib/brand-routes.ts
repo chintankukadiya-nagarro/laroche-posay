@@ -1,6 +1,7 @@
 import { getCart, getCartId, type StorefrontClient } from "@shopify/hydrogen";
 
 import {
+  cartHasConfirmedForeignVendor,
   clearBrandNoticesCookie,
   isBuyPermalink,
   isUnscopedCartProxy,
@@ -9,7 +10,7 @@ import {
   serializeBrandNotices,
   variantGidsFromCartPermalink,
 } from "~/lib/brand";
-import { findRejectedMerchandise, stripForeignLines, type StoredBrandCart } from "~/lib/brand-cart";
+import { findRejectedMerchandise, type StoredBrandCart } from "~/lib/brand-cart";
 
 const DISABLED_PROXY_MESSAGE =
   "This cart endpoint is disabled on this demo because it cannot be limited to one brand. Add products from the product page instead.";
@@ -72,10 +73,10 @@ export async function enforceBrandHandoff(
     const loaded = await getCart(cartId, storefront);
     const cart = loaded.cart as StoredBrandCart | null;
     if (!cart) return null;
-
-    const stripped = await stripForeignLines(storefront, cart);
-    if (stripped.status === "clean") return null;
-    return noticeRedirect(request, stripped.notices);
+    if (!cartHasConfirmedForeignVendor(cart.lines.nodes)) return null;
+    return noticeRedirect(request, [
+      "This cart contains a product from outside the shared catalog, so checkout was not opened.",
+    ]);
   } catch {
     return noticeRedirect(request, [
       "This cart could not be verified for this brand, so checkout was not opened.",

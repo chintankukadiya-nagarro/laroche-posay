@@ -17,7 +17,6 @@ import {
   presentBrandCatalog,
   readBrandNotices,
   rejectedVariantIds,
-  removedLinesMessage,
   serializeBrandNotices,
   shopifyCheckoutUrl,
   variantGidsFromCartPermalink,
@@ -111,20 +110,23 @@ describe("brand cart", () => {
     ).toEqual([{ id: "gid://shopify/ProductVariant/2", title: "Elixir" }]);
   });
 
-  it("removes other-brand lines from an existing cart and blocks their checkout url", () => {
+  it("keeps the other approved brand in the cart and blocks only an unknown vendor", () => {
     const foreign = foreignCartLines(lines);
-    expect(foreign.map((line) => line.id)).toEqual(["line-other", "line-unknown"]);
-    expect(removedLinesMessage(foreign.map((line) => line.merchandise?.product?.title ?? "Item"))).toContain(
-      "Elixir",
-    );
+    expect(foreign.map((line) => line.id)).toEqual([]);
+    expect(
+      foreignCartLines([
+        ...lines,
+        { id: "line-unknown-vendor", merchandise: { product: { title: "Other", vendor: "Other" } } },
+      ]).map((line) => line.id),
+    ).toEqual(["line-unknown-vendor"]);
     expect(
       foreignLineIdsTargetedByUpdate({ intent: "update", lines: [{ id: "line-other" }] }, lines),
-    ).toEqual(["line-other"]);
+    ).toEqual([]);
 
     const checkoutUrl = "https://nagarro-salon-pro.myshopify.com/cart/c/abc?key=shopify";
     expect(shopifyCheckoutUrl(checkoutUrl, true)).toBeNull();
     expect(shopifyCheckoutUrl(checkoutUrl, false)).toBe(checkoutUrl);
-    expect(cartHasConfirmedForeignVendor(lines)).toBe(true);
+    expect(cartHasConfirmedForeignVendor(lines)).toBe(false);
     expect(cartHasConfirmedForeignVendor([lines[0]!])).toBe(false);
   });
 

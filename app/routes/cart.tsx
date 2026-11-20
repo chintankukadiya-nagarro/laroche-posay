@@ -1,9 +1,9 @@
-import { ShopPayButton } from "@shopify/hydrogen/react";
 import { useEffect } from "react";
 
 import { publishCartViewed } from "~/components/AnalyticsTrackers";
+import { CartCheckout } from "~/components/CartCheckout";
 import { CartLineItem } from "~/components/CartDrawer";
-import { cartHasConfirmedForeignVendor, shopifyCheckoutUrl } from "~/lib/brand";
+import { cartHasConfirmedForeignVendor } from "~/lib/brand";
 import { useCart } from "~/lib/cart";
 import { formatPrice } from "~/lib/money";
 import { formatPageTitle, getShopNameFromRootMatch } from "~/lib/storefront-shop";
@@ -17,11 +17,10 @@ export function meta({ matches }: Route.MetaArgs) {
 export default function CartRoute() {
   const cart = useCart((state) => state.data);
   const loading = useCart((state) => state.loading);
-  const lines = cart.lines.nodes;
-  const checkoutUrl = shopifyCheckoutUrl(
-    cart.checkoutUrl,
-    cartHasConfirmedForeignVendor(lines),
-  );
+  const lines = cart?.lines.nodes ?? [];
+  const sharedCart = cart?.id === "gid://shopify/Cart/shared";
+  const checkoutUrl =
+    sharedCart || cartHasConfirmedForeignVendor(lines) ? null : cart?.checkoutUrl;
 
   useEffect(() => {
     publishCartViewed(cart);
@@ -62,17 +61,7 @@ export default function CartRoute() {
             <p className="text-on-surface-secondary mt-3 text-xs">
               Taxes and shipping calculated at checkout
             </p>
-            {checkoutUrl ? (
-              <div className="mt-4 grid gap-3">
-                <ShopPayButton width="100%" borderRadius="8px" />
-                <a
-                  href={checkoutUrl}
-                  className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-[color,background-color,border-color,transform] motion-safe:active:scale-[0.97]"
-                >
-                  Checkout
-                </a>
-              </div>
-            ) : null}
+            <CartCheckout cartId={cart.id} checkoutUrl={checkoutUrl} />
           </aside>
         </div>
       ) : null}

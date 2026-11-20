@@ -28,6 +28,11 @@ export function isAllowedVendor(vendor: string | null | undefined): boolean {
   return vendor === brandConfig.vendor;
 }
 
+/** Cart lines may contain either approved brand. Browsing still uses `isAllowedVendor`. */
+export function isSharedCartVendor(vendor: string | null | undefined): boolean {
+  return vendor === "La Roche-Posay" || vendor === "Kérastase";
+}
+
 export function isAllowedCollectionHandle(handle: string | undefined): handle is string {
   return handle != null && allowedCollectionHandles.some((allowed) => allowed === handle);
 }
@@ -96,7 +101,10 @@ export type BrandCartLine = {
 };
 
 export function foreignCartLines(lines: readonly BrandCartLine[]): BrandCartLine[] {
-  return lines.filter((line) => !isAllowedVendor(line.merchandise?.product?.vendor));
+  return lines.filter((line) => {
+    const vendor = line.merchandise?.product?.vendor;
+    return typeof vendor === "string" && !isSharedCartVendor(vendor);
+  });
 }
 
 /** Confirmed wrong vendor only. Missing vendor is an optimistic line, not proof. */
@@ -107,7 +115,7 @@ export function cartHasConfirmedForeignVendor(
 ): boolean {
   return lines.some((line) => {
     const vendor = line.merchandise?.product?.vendor;
-    return typeof vendor === "string" && !isAllowedVendor(vendor);
+    return typeof vendor === "string" && !isSharedCartVendor(vendor);
   });
 }
 

@@ -15,6 +15,8 @@ import { brandConfig, isAllowedVendor, presentBrandCatalog } from "~/lib/brand";
 import { openCartDrawer } from "~/lib/cart-drawer";
 import { formatPrice, salePercent } from "~/lib/money";
 import { ProductProvider, useProductForm } from "~/lib/product";
+import { isSharedCartId } from "@loreal/shared-cart";
+import { useCart } from "~/lib/cart";
 import { storefrontClientContext } from "~/lib/storefront";
 import { formatPageTitle } from "~/lib/storefront-shop";
 
@@ -647,6 +649,7 @@ function AddToCart({
   selectedVariant: ProductVariant | null;
 }) {
   const { options, register, formProps, errors, pending } = useProductForm();
+  const sharedCart = isSharedCartId(useCart((state) => state.data.id));
   const addable = canAddToCart(product, options);
   const buttonText = addable ? "Add to cart" : selectedVariant ? "Sold out" : "Select options";
 
@@ -666,7 +669,7 @@ function AddToCart({
           {buttonText}
         </button>
       </form>
-      {selectedVariant ? (
+      {selectedVariant && !sharedCart ? (
         <div className="mt-3">
           <ShopPayButton
             variants={[{ id: selectedVariant.id, quantity }]}
