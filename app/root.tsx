@@ -13,6 +13,7 @@ import {
 } from "react-router";
 
 import { CartAnalyticsTracker, PageViewedTracker } from "~/components/AnalyticsTrackers";
+import { BrandBar } from "~/components/BrandBar";
 import { AnnouncementBar } from "~/components/AnnouncementBar";
 import { CartFocusRefresh } from "~/components/CartFocusRefresh";
 import { CartDrawer } from "~/components/CartDrawer";
@@ -20,6 +21,7 @@ import { Footer } from "~/components/Footer";
 import { Header } from "~/components/Header";
 import { SearchDrawer } from "~/components/SearchDrawer";
 import { brandConfig } from "~/lib/brand";
+import { brandBarLinks } from "~/lib/brand-bar";
 import { clearBrandNoticeOnDocument, enforceBrandHandoff } from "~/lib/brand-routes";
 import { CartProvider } from "~/lib/cart";
 import { brandCartHandlers, loadBrandCart } from "~/lib/cart-handlers";
@@ -148,6 +150,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
     shopInfo: layout.shopInfo,
     shopIdentity: resolveShopIdentity(env, layout.shopId || env.SHOP_ID || ""),
     currency: layout.currency,
+    brandBar: brandBarLinks(env),
   };
 }
 
@@ -196,8 +199,11 @@ export default function App({ loaderData }: Route.ComponentProps) {
       <CartFocusRefresh />
       <PageViewedTracker />
       <CartAnalyticsTracker />
-      <AnnouncementBar />
-      <Header />
+      <div className="sticky top-0 z-40">
+        <BrandBar links={loaderData.brandBar} />
+        <AnnouncementBar />
+        <Header />
+      </div>
       {loaderData.brandNotices.length > 0 ? (
         <div
           role="status"
@@ -232,7 +238,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     stack = error.stack;
   }
 
+  const rootData = useRouteLoaderData<typeof loader>("root");
+
   return (
+    <>
+    <div className="sticky top-0 z-40">
+      <BrandBar links={rootData?.brandBar ?? brandBarLinks()} />
+    </div>
     <main
       id="main-content"
       tabIndex={-1}
@@ -246,5 +258,6 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         </pre>
       ) : null}
     </main>
+    </>
   );
 }

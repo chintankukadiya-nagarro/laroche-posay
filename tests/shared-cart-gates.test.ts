@@ -9,6 +9,7 @@ import {
   SHOP_DOMAIN,
   createMemoryMetafields,
   customerGidFromProxy,
+  parseLineId,
   handleAppProxyCart,
   handleSharedCart,
   proxyMessage,
@@ -214,6 +215,11 @@ describe("shared cart gates", () => {
     expect(sameOrigin(request)).toBe(false);
     expect(customerGidFromProxy("1")).toBe(customerA);
     expect(customerGidFromProxy("")).toBeNull();
+    expect(parseLineId("gid://shopify/CartLine/abc?cart=gid://shopify/Cart/xyz")).toBe(
+      "gid://shopify/CartLine/abc?cart=gid://shopify/Cart/xyz",
+    );
+    expect(parseLineId("gid://shopify/CartLine/abc")).toBe("gid://shopify/CartLine/abc");
+    expect(parseLineId("gid://shopify/CartLine/abc?cart=gid://shopify/Cart/xyz&x=1")).toBeNull();
   });
 
   it("serves a signed proxy cart without the cart secret and rejects a direct call", async () => {

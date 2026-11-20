@@ -22,7 +22,7 @@ export function Header() {
   const totalQuantity = useCart((state) => state.data?.totalQuantity ?? 0);
 
   return (
-    <header className="border-border bg-surface sticky top-0 z-40 border-b">
+    <header className="border-border bg-surface border-b">
       <div
         className="max-w-page px-margin mx-auto flex h-16 w-full items-center justify-between"
         data-header-nav-group
