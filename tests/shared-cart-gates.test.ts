@@ -218,6 +218,9 @@ describe("shared cart gates", () => {
     expect(parseLineId("gid://shopify/CartLine/abc?cart=gid://shopify/Cart/xyz")).toBe(
       "gid://shopify/CartLine/abc?cart=gid://shopify/Cart/xyz",
     );
+    expect(parseLineId("gid://shopify/CartLine/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee?cart=hWN2example")).toBe(
+      "gid://shopify/CartLine/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee?cart=hWN2example",
+    );
     expect(parseLineId("gid://shopify/CartLine/abc")).toBe("gid://shopify/CartLine/abc");
     expect(parseLineId("gid://shopify/CartLine/abc?cart=gid://shopify/Cart/xyz&x=1")).toBeNull();
   });
